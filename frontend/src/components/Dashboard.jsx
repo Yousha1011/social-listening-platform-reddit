@@ -6,11 +6,15 @@ const Dashboard = () => {
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
 
+    const [progress, setProgress] = useState(null);
+
     const handleAnalyze = async () => {
         setLoading(true);
         setError(null);
+        setProgress(null);
+        setData(null);
+
         try {
-            // Use environment variable for production, fallback to localhost for dev
             const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
             const response = await fetch(`${API_URL}/api/analyze`, {
                 method: 'POST',
@@ -19,7 +23,7 @@ const Dashboard = () => {
                 },
                 body: JSON.stringify({
                     keywords: keywords.split(',').map(k => k.trim()),
-                    limit: 10000 // Attempt to fetch as many as possible
+                    limit: 10000
                 }),
             });
 
@@ -27,11 +31,34 @@ const Dashboard = () => {
                 throw new Error('Analysis failed');
             }
 
-            const result = await response.json();
-            setData(result);
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+                for (const line of lines) {
+                    try {
+                        const json = JSON.parse(line);
+                        if (json.status === 'progress') {
+                            setProgress(json);
+                        } else if (json.status === 'complete') {
+                            setData(json.data);
+                            setLoading(false);
+                        } else if (json.status === 'error') {
+                            throw new Error(json.message);
+                        }
+                    } catch (e) {
+                        console.error("Error parsing chunk", e);
+                    }
+                }
+            }
         } catch (err) {
             setError(err.message);
-        } finally {
             setLoading(false);
         }
     };
@@ -57,6 +84,27 @@ const Dashboard = () => {
                     </button>
                 </div>
                 {error && <p className="mt-2 text-red-600">{error}</p>}
+
+                {loading && progress && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700">{progress.message}</span>
+                            <span className="text-sm font-medium text-gray-700">
+                                {progress.total > 0 ? Math.round((progress.analyzed / progress.total) * 100) : 0}%
+                            </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div
+                                className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500"
+                                style={{ width: `${progress.total > 0 ? (progress.analyzed / progress.total) * 100 : 0}%` }}
+                            ></div>
+                        </div>
+                        <div className="mt-2 flex justify-between text-xs text-gray-500">
+                            <span>Extracted: {progress.extracted}</span>
+                            <span>Analyzed: {progress.analyzed} / {progress.total}</span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {data && (

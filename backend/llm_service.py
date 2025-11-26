@@ -1,5 +1,5 @@
 import google.generativeai as genai
-from .models import AnalysisResult, RedditPost
+from models import AnalysisResult, RedditPost
 import os
 import json
 import time

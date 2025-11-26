@@ -2,7 +2,7 @@ import praw
 import os
 from dotenv import load_dotenv
 from typing import List
-from .models import RedditPost
+from models import RedditPost
 
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path=env_path)

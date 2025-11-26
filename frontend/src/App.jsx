@@ -7,7 +7,7 @@ function App() {
         <Dashboard />
       </div>
       <footer className="bg-white py-4 mt-8 border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 text-center text-gray-600 text-sm">
+        <div className="max-w-7xl mx-auto px-4 text-center text-gray-800 text-lg font-bold">
           @Copyright reserved: Abu Yousha Mohammad Abdullah (MSc, School of Public Health, University of Waterloo)
         </div>
       </footer>
